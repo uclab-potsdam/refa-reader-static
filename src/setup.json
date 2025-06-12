@@ -1,0 +1,22 @@
+{
+    "title": "ReFa Reader",
+    "api": "",
+    "local": "db.json",
+    "url": "https://uclab.fh-potsdam.de/refa-catalog/api",
+    "paths": {
+        "title": "o:title",
+        "img": ["thumbnail_display_urls", "large"],
+        "property": ""
+    },
+    "publicSite": "",
+    "languages": [
+        "en"
+    ],
+    "description": {
+        "en": "An interactive visualization that juxtaposes essays and graphs. It allows readers to browse JSON-LD data, by accessing them through a curated selection of texts designed to provide better understanding, combining editorial approaches with free exploration and usear-driven granularity."
+    },
+    "batch": 30,
+    "mainCategories": [],
+    "descriptionSeo": "Lorem ipsum dolor sit amet.",
+    "imageSeo": ""
+}
