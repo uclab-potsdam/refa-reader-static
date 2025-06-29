@@ -135,11 +135,14 @@ export function parseJSONLD(jsonLD, set) {
 					obj[config.property]?.replace('_', ' ')?.replace(regex, '') ||
 					parentKey?.replace(regex, '');
 
+
 				const exists = triplets.some(
 					(triplet) => triplet.source === source && triplet.target === target
 				);
 
-				if (!exists) {
+				// console.log(property)
+
+				if (!exists && !config.hideProperties.includes(property)) {
 					triplets.push({
 						source: source,
 						target: target,

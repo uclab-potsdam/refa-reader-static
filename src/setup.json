@@ -15,6 +15,7 @@
 		"de": "Dieses visuelle Interface ist ein Resultat des <a href='https://uclab.fh-potsdam.de/refa'>Restaging Fashion-Projekts</a>. Es bietet Zugang zu einer Auswahl von Objekten aus der Lipperheideschen Kostümbibliothek. Die einführenden Texte verlinken über Graphen zu den Sammlungsobjekten. Die Essays werden einer Grafik gegenübergestellt, die es dem Benutzer ermöglicht, die Gemälde, Drucke, Zeichnungen und Kleider der Sammlung zu durchsuchen. Anstatt die Sammlung in ihrer Gesamtheit zu zeigen, wird sie einführend durch eine kuratierte Objektauswahl zugänglich gemacht, die ein besseres Verständnis der Sammlung ermöglichen und redaktionelle Ansätze mit freier Erkundung und benutzergesteuerter Granularität kombinieren. ReFa Reader ist als <a href='https://github.com/uclab-potsdam/refa-reader'>Open-Source-Software</a> verfügbar."
 	},
 	"batch": 30,
+	"hideProperties": ["resource template", "item set", "site", "resource class", "owner"],
 	"mainCategories": [
 		{
 			"key": "Related Artworks",
