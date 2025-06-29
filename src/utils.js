@@ -40,25 +40,25 @@ export async function extractLinks(markdown, mdData) {
 	return links;
 }
 
-function getItemsFromDbById(ids, mdData, type) {
-	const baseApiUrl = config.api;
+// Accepts both full URLs and Omeka IDs
+function getItemsFromDbById(ids, db, type) {
+	return db.filter((item) => {
+		const itemId = item['@id'];
+		// Check direct match
+		if (ids.includes(itemId)) return true;
 
-	return mdData
-		.filter((item) => {
-			const id = item['@id'];
-			// const idWithoutBaseUrl = id?.split('/').pop();
-			return ids.find((d) => d == id);
+		// Try replacing /media/, /items/, /item_sets/ to /resources/
+		const normalizedId = itemId
+			?.replace(/\/items\//, '/resources/')
+			?.replace(/\/media\//, '/resources/')
+			?.replace(/\/item_sets\//, '/resources/');
+		if (ids.includes(normalizedId)) return true;
 
-			// return ids.includes(id);
-		})
-		.map((item) => {
-			// only for omeka
-			item['@id'] = item['@id']
-				?.replace(/\/items\//, '/resources/')
-				?.replace(/\/media\//, '/resources/')
-				?.replace(/\/item_sets\//, '/resources/');
-			return item;
-		});
+		// Try checking if any provided id matches after normalization
+		return ids.some(
+			(id) => id === itemId || id === normalizedId || itemId.endsWith('/' + id) // e.g. just the numeric part
+		);
+	});
 }
 
 export async function createTriplets(data) {
@@ -135,7 +135,6 @@ export function parseJSONLD(jsonLD, set) {
 					obj[config.property]?.replace('_', ' ')?.replace(regex, '') ||
 					parentKey?.replace(regex, '');
 
-
 				const exists = triplets.some(
 					(triplet) => triplet.source === source && triplet.target === target
 				);
@@ -175,4 +174,26 @@ export function parseJSONLD(jsonLD, set) {
 
 export function getNestedValue(obj, path) {
 	return path.split('.').reduce((o, key) => (o || {})[key], obj);
+}
+export function getItemThumbnail(item, allEntities, preferredSize = 'large') {
+  if (!item) return null;
+  
+  // Direct: sometimes image is in the item
+  if (item.thumbnail_display_urls && item.thumbnail_display_urls[preferredSize]) {
+    return item.thumbnail_display_urls[preferredSize];
+  }
+
+  // Or in o:media
+  const mediaArr = item['o:media'];
+  if (!mediaArr || !mediaArr.length) return null;
+
+  for (let mediaRef of mediaArr) {
+    // Find media entity
+    let mediaObj = allEntities.find(ent => ent['@id'] === mediaRef['@id'] || ent['o:id'] === mediaRef['o:id']);
+    if (mediaObj?.thumbnail_display_urls && mediaObj.thumbnail_display_urls[preferredSize]) {
+      return mediaObj.thumbnail_display_urls[preferredSize];
+    }
+  }
+
+  return null;
 }

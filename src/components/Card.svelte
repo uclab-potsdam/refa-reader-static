@@ -30,19 +30,27 @@
 	}
 
 	function handleError(event) {
-		event.target.style.display = 'none'; // Hide image on error
+		event.target.style.display = 'none';
 	}
 
-	function getImageByNode(node) {
-		const id = node;
-		const datum = $entities.find((d) => {
-			return d['@id'] == id;
-		});
-		return datum?.[config.paths.img[0]]?.[0]?.['@id'] ||  getNestedValue(datum, config.paths.img.join('.'));
+	import { getItemThumbnail } from '@utils';
+
+	const entity = $entities.find((d) => d['@id'] === datum.target);
+
+	if (entity?.thumbnail_display_urls?.large) {
+		imageSrc = entity.thumbnail_display_urls.large;
+	} else if (entity?.['o:media']?.length) {
+		for (const ref of entity['o:media']) {
+			const media = $entities.find((d) => d['@id'] === ref['@id']);
+			if (media?.thumbnail_display_urls?.large) {
+				imageSrc = media.thumbnail_display_urls.large;
+				break;
+			}
+		}
 	}
 
-	$: {
-		imageSrc = getImageByNode(datum.target);
+	if (!imageSrc) {
+		imageSrc = '';
 	}
 
 	$: source = datum?.source; //?.split('/').slice(-1)[0];
@@ -104,6 +112,12 @@
 		{#if datum.title}
 			<div class="title">{datum.title?.replace(config.url, '') || ''}</div>
 		{/if}
+	{:else if datum.target && datum.target.startsWith('http') && !datum.target.includes(config.url)}
+		<div class="title">
+			<a href={datum.target} target="_blank" rel="noopener noreferrer">
+				{datum.title?.replace(config.url, '') || datum.target}
+			</a>
+		</div>
 	{:else}
 		<div class="title">{datum.title?.replace(config.url, '') || ''}</div>
 	{/if}
