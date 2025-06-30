@@ -105,21 +105,15 @@
 			on:error={handleError}
 		/>
 		{#if datum.title}
-			<div class="title">{datum.title?.replace(config.url, '')}</div>
+			<div class="title">{datum.title?.replace(config.api, '')}</div>
 		{/if}
 	{:else if imageSrc}
 		<img src={imageSrc} alt={datum.title} on:load={handleLoad} on:error={handleError} />
-		{#if datum.title}
-			<div class="title">{datum.title?.replace(config.url, '') || ''}</div>
+		{#if datum.title && !datum.title.startsWith(config.api)}
+			<div class="title">{datum.title?.replace(config.api, '') || ''}</div>
 		{/if}
-	{:else if datum.target && datum.target.startsWith('http') && !datum.target.includes(config.url)}
-		<div class="title">
-			<a href={datum.target} target="_blank" rel="noopener noreferrer">
-				{datum.title?.replace(config.url, '') || datum.target}
-			</a>
-		</div>
 	{:else}
-		<div class="title">{datum.title?.replace(config.url, '') || ''}</div>
+		<div class="title">{datum.title?.replace(config.api, '') || ''}</div>
 	{/if}
 
 	<!-- Links -->
