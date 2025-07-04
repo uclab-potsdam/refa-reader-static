@@ -7,13 +7,15 @@ export async function extractLinks(markdown, mdData) {
 
 	let match;
 	while ((match = regex.exec(markdown))) {
-		if (match[2].includes('http') && !match[2].includes(config.url)) {
+		if (
+			typeof match[2] === 'string' &&
+			match[2].includes('http') &&
+			!match[2].includes(config.url)
+		) {
 			continue;
 		} else {
 			const label = match[3];
-			const url = decodeURIComponent(match[2]);
-			// const id = url.split("/")[1] || url.split("/")[0];
-			// console.log(label, id, url)
+			const url = decodeURIComponent(match[2] || '');
 
 			links.push({
 				label,
@@ -29,7 +31,9 @@ export async function extractLinks(markdown, mdData) {
 	let parseItems = [...getItemsFromDbById(allUrls, mdData, 'items')];
 
 	for (let i = 0; i < links.length; i++) {
-		const link = links.find((d) => parseItems[i]?.['@id'].includes(d.id));
+		const link = links.find(
+			(d) => typeof parseItems[i]?.['@id'] === 'string' && parseItems[i]['@id'].includes(d.id)
+		);
 		const json = parseItems[i];
 		if (link) {
 			link.uniqueId = newUniqueId();
@@ -40,23 +44,23 @@ export async function extractLinks(markdown, mdData) {
 	return links;
 }
 
-// Accepts both full URLs and Omeka IDs
 function getItemsFromDbById(ids, db, type) {
 	return db.filter((item) => {
 		const itemId = item['@id'];
-		// Check direct match
+
 		if (ids.includes(itemId)) return true;
 
-		// Try replacing /media/, /items/, /item_sets/ to /resources/
 		const normalizedId = itemId
 			?.replace(/\/items\//, '/resources/')
 			?.replace(/\/media\//, '/resources/')
 			?.replace(/\/item_sets\//, '/resources/');
 		if (ids.includes(normalizedId)) return true;
 
-		// Try checking if any provided id matches after normalization
 		return ids.some(
-			(id) => id === itemId || id === normalizedId || itemId.endsWith('/' + id) // e.g. just the numeric part
+			(id) =>
+				id === itemId ||
+				id === normalizedId ||
+				(typeof itemId === 'string' && itemId.endsWith('/' + id))
 		);
 	});
 }
@@ -67,7 +71,8 @@ export async function createTriplets(data) {
 	for (let i = 0; i < data.length; i++) {
 		if (data[i].data) {
 			let jsonLD = data[i].data;
-			let set = data[i].set || null; // omeka-s
+			let set = data[i].set || null;
+			console.log('here', jsonLD);
 			let triplets = parseJSONLD(jsonLD, set);
 
 			allTriplets = [...allTriplets, ...triplets];
@@ -94,13 +99,12 @@ export function parseJSONLD(jsonLD, set) {
 	let triplets = [];
 	let source = jsonLD['@id'];
 
-	// omeka s
 	if (set) {
 		triplets.push({
 			source: set['@id'],
 			target: source,
 			img:
-				jsonLD[config.paths.img[0]]?.[0]['@id'] ||
+				jsonLD[config.paths.img[0]]?.[0]?.['@id'] ||
 				getNestedValue(jsonLD, config.paths.img.join('.')),
 			title: jsonLD[config.title]
 		});
@@ -125,11 +129,11 @@ export function parseJSONLD(jsonLD, set) {
 					.replace(/\/media\//, '/resources/')
 					.replace(/\/item_sets\//, '/resources/');
 
-				const title = obj[config.paths.title] || obj.display_title || obj['@id']; // omeka s
+				const title = obj[config.paths.title] || obj.display_title || obj['@id'];
 				const img =
 					obj?.thumbnail_url ||
 					obj?.[config.paths.img?.[0]]?.[0]?.['@id'] ||
-					getNestedValue(obj, config.paths.img.join('.')); // omeka s
+					getNestedValue(obj, config.paths.img.join('.'));
 
 				let property =
 					obj[config.property]?.replace('_', ' ')?.replace(regex, '') ||
@@ -139,8 +143,6 @@ export function parseJSONLD(jsonLD, set) {
 					(triplet) => triplet.source === source && triplet.target === target
 				);
 
-				// console.log(property)
-
 				if (!exists && !config.hideProperties.includes(property)) {
 					triplets.push({
 						source: source,
@@ -149,7 +151,7 @@ export function parseJSONLD(jsonLD, set) {
 						img,
 						property,
 						reverse,
-						external: target.includes(config.url) ? false : true
+						external: typeof target === 'string' && target.includes(config.url) ? false : true
 					});
 				}
 			} else if (typeof obj[key] === 'object') {
@@ -175,25 +177,25 @@ export function parseJSONLD(jsonLD, set) {
 export function getNestedValue(obj, path) {
 	return path.split('.').reduce((o, key) => (o || {})[key], obj);
 }
+
 export function getItemThumbnail(item, allEntities, preferredSize = 'large') {
-  if (!item) return null;
-  
-  // Direct: sometimes image is in the item
-  if (item.thumbnail_display_urls && item.thumbnail_display_urls[preferredSize]) {
-    return item.thumbnail_display_urls[preferredSize];
-  }
+	if (!item) return null;
 
-  // Or in o:media
-  const mediaArr = item['o:media'];
-  if (!mediaArr || !mediaArr.length) return null;
+	if (item.thumbnail_display_urls && item.thumbnail_display_urls[preferredSize]) {
+		return item.thumbnail_display_urls[preferredSize];
+	}
 
-  for (let mediaRef of mediaArr) {
-    // Find media entity
-    let mediaObj = allEntities.find(ent => ent['@id'] === mediaRef['@id'] || ent['o:id'] === mediaRef['o:id']);
-    if (mediaObj?.thumbnail_display_urls && mediaObj.thumbnail_display_urls[preferredSize]) {
-      return mediaObj.thumbnail_display_urls[preferredSize];
-    }
-  }
+	const mediaArr = item['o:media'];
+	if (!mediaArr || !mediaArr.length) return null;
 
-  return null;
+	for (let mediaRef of mediaArr) {
+		let mediaObj = allEntities.find(
+			(ent) => ent['@id'] === mediaRef['@id'] || ent['o:id'] === mediaRef['o:id']
+		);
+		if (mediaObj?.thumbnail_display_urls && mediaObj.thumbnail_display_urls[preferredSize]) {
+			return mediaObj.thumbnail_display_urls[preferredSize];
+		}
+	}
+
+	return null;
 }

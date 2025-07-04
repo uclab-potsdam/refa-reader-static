@@ -33,65 +33,49 @@
 		}
 	}
 
+	// Helper to normalize IDs
+	function normalizeId(id) {
+		return id
+			.replace(/\/items\//g, '/resources/')
+			.replace(/\/media\//g, '/resources/')
+			.replace(/\/item_sets\//g, '/resources/');
+	}
+
 	async function openNode(node, index) {
 		resetScroll(index);
 		loadingColumn = true;
 
-		// Remove all elements in $graphSteps after the given index
 		$graphSteps.splice(index, $graphSteps.length - index);
 
 		let columnNodes = $graphSteps.map((obj) => obj.data).flat();
 
-		// const response = await fetch(node.target);
-		// const data = await response.json();
-
-		const data = $db.find(
-			(d) =>
-				d['@id']
-					.replace(/\/items\//, '/resources/')
-					.replace(/\/media\//, '/resources/')
-					.replace(/\/item_sets\//, '/resources/') ===
-				node.target
-					.replace(/\/items\//, '/resources/')
-					.replace(/\/media\//, '/resources/')
-					.replace(/\/item_sets\//, '/resources/')
-		);
+		const data = $db.find((d) => normalizeId(d['@id']) === normalizeId(node.target));
 
 		//Fetch the items in the set // just for omeka s
 		if (data?.['o:items'] && $graphSteps.length == 1) {
 			let setData = [];
 			const items = data['o:items']['@id'];
-			// const responseSet = await fetch(items);
-			// const jsonSet = await responseSet.json();
 
-			// check this
-			const jsonSet = $db.find(
-				(d) =>
-					d['@id']
-						.replace(/\/items\//, '/resources/')
-						.replace(/\/media\//, '/resources/')
-						.replace(/\/item_sets\//, '/resources/') ===
-					node.target
-						.replace(/\/items\//, '/resources/')
-						.replace(/\/media\//, '/resources/')
-						.replace(/\/item_sets\//, '/resources/')
-			);
+			// Use filter (returns array, even if 0 or 1 elements)
+			const jsonSet = $db.filter((d) => normalizeId(d['@id']) === normalizeId(node.target));
 
-			jsonSet.forEach((item) => {
-				setData.push(item);
-			});
+			// Only call forEach if array is non-empty
+			if (Array.isArray(jsonSet) && jsonSet.length) {
+				jsonSet.forEach((item) => {
+					setData.push(item);
+				});
+			}
 
-			// omeka s
 			let setItems = setData.map((d) => {
 				return {
 					title: d[config.paths.title] || d.data?.['@id'],
 					'@id': d['@id'],
-					thumbnail_display_urls: d[config.paths.img[0]]?.[0]['@id'] || getNestedValue(d, config.paths.img.join('.'))
+					thumbnail_display_urls:
+						d[config.paths.img[0]]?.[0]?.['@id'] || getNestedValue(d, config.paths.img.join('.'))
 				};
 			});
 
-			// add the set to the data
-			data.related = { ...setItems };
+			data.related = setItems;
 		}
 
 		selectedTriplets = await createTriplets([{ data }]);
@@ -103,7 +87,6 @@
 		let newNodes = updateNodes([...defaultNodes, ...columnNodes], selectedTripletsData);
 		let paginate = selectedTripletsData.slice(0, batchSize);
 
-		// Replace the element at the given index with the new data
 		$graphSteps[index] = {
 			id: node.target,
 			data: selectedTripletsData.sort((a, b) => {
@@ -122,6 +105,10 @@
 			loadData(paginate, batchSize);
 		}
 		$updatePosition = true;
+	}
+
+	function getNestedValue(obj, path) {
+		return path.split('.').reduce((o, key) => (o || {})[key], obj);
 	}
 
 	function updateNodes(nodes, selectedNodes) {
