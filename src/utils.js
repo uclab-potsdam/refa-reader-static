@@ -72,7 +72,7 @@ export async function createTriplets(data) {
 		if (data[i].data) {
 			let jsonLD = data[i].data;
 			let set = data[i].set || null;
-			console.log('here', jsonLD);
+			// console.log('here', jsonLD);
 			let triplets = parseJSONLD(jsonLD, set);
 
 			allTriplets = [...allTriplets, ...triplets];

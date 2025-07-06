@@ -79,6 +79,6 @@ export async function loadDb() {
 		db.set(normalizedData);
 		console.log('Database loaded and all @id fields normalized.');
 	} catch (error) {
-		console.error('Error loading db.json:', error);
+		console.error('Error loading db:', error);
 	}
 }

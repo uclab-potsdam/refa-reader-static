@@ -1,8 +1,8 @@
 {
 	"title": "ReFa Reader",
 	"api": "https://uclab.fh-potsdam.de/refa-catalog/api",
-	"local": "db2.json",
-	"url": "",
+	"local": "db_min.json",
+	"url": "https://uclab.fh-potsdam.de/refa-catalog/",
 	"paths": {
 		"title": "o:title",
 		"img": ["thumbnail_display_urls", "large"],
